@@ -2,29 +2,29 @@
 
 // ============================================================
 //  LABYRINTHE ASCII - C# Console
-//  Tableau : int[50, 20]  (largeur=50, hauteur=20)
-//  0 = couloir   1 = mur   2 = joueur   3 = sortie
+//  Tableau : int[50, 20]  (width=50, height=20)
+//  0 = couloir   1 = mur   2 = player   3 = exit
 //  Déplacement : Z/Q/S/D ou flèches
 //  ✅ Optimisé : seules les cellules modifiées sont redessinées
 //               via Console.SetCursorPosition()
 // ============================================================
 
-const int largeur = 50;
-const int hauteur = 20;
+const int width = 50;
+const int height = 20;
 
-var grille = new int[largeur, hauteur];
+var grid = new int[width, height];
 
 // Décalage vertical dans la console (nombre de lignes du titre)
 const int offsetY = 3;
 const int offsetX = 0;
 
 // ── Génération du labyrinthe par « recursive backtracker » ──
-var cellW = largeur / 2;   // 25
-var cellH = hauteur / 2;   // 10
+var cellW = width / 2;   // 25
+var cellH = height / 2;   // 10
 
-for (var y = 0; y < hauteur; y++)
-    for (var x = 0; x < largeur; x++)
-        grille[x, y] = 1;
+for (var y = 0; y < height; y++)
+    for (var x = 0; x < width; x++)
+        grid[x, y] = 1;
 
 var stackX = new int[cellW * cellH];
 var stackY = new int[cellW * cellH];
@@ -39,7 +39,7 @@ var rng = new Random();
 
 var startCX = 0; var startCY = 0;
 visited[startCX, startCY] = true;
-grille[startCX * 2, startCY * 2] = 0;
+grid[startCX * 2, startCY * 2] = 0;
 
 stackX[stackTop] = startCX;
 stackY[stackTop] = startCY;
@@ -50,22 +50,22 @@ while (stackTop > 0)
     var cx = stackX[stackTop - 1];
     var cy = stackY[stackTop - 1];
 
-    var ordre = new[] { 0, 1, 2, 3 };
+    var order = new[] { 0, 1, 2, 3 };
     for (var i = 3; i > 0; i--)
     {
         var j = rng.Next(i + 1);
-        var tmp = ordre[i]; ordre[i] = ordre[j]; ordre[j] = tmp;
+        var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
     }
 
     var found = false;
     for (var d = 0; d < 4; d++)
     {
-        var nx = cx + dx[ordre[d]];
-        var ny = cy + dy[ordre[d]];
+        var nx = cx + dx[order[d]];
+        var ny = cy + dy[order[d]];
         if (nx >= 0 && nx < cellW && ny >= 0 && ny < cellH && !visited[nx, ny])
         {
-            grille[cx * 2 + dx[ordre[d]], cy * 2 + dy[ordre[d]]] = 0;
-            grille[nx * 2, ny * 2] = 0;
+            grid[cx * 2 + dx[order[d]], cy * 2 + dy[order[d]]] = 0;
+            grid[nx * 2, ny * 2] = 0;
             visited[nx, ny] = true;
             stackX[stackTop] = nx;
             stackY[stackTop] = ny;
@@ -77,13 +77,13 @@ while (stackTop > 0)
     if (!found) stackTop--;
 }
 
-// ── Position joueur et sortie ──
-var joueurX = 0; var joueurY = 0;
-var sortieX = (cellW - 1) * 2;
-var sortieY = (cellH - 1) * 2;
+// ── Position player et exit ──
+var playerX = 0; var playerY = 0;
+var exitX = (cellW - 1) * 2;
+var exitY = (cellH - 1) * 2;
 
-grille[joueurX, joueurY] = 2;
-grille[sortieX, sortieY] = 3;
+grid[playerX, playerY] = 2;
+grid[exitX, exitY] = 3;
 
 // ── Dessin initial complet (une seule fois) ──
 Console.Clear();
@@ -96,12 +96,12 @@ Console.WriteLine("║          🏃 LABYRINTHE ASCII  C#  🏃             ║"
 Console.WriteLine("╚══════════════════════════════════════════════════╝");
 Console.ResetColor();
 
-for (var y = 0; y < hauteur; y++)
+for (var y = 0; y < height; y++)
 {
-    for (var x = 0; x < largeur; x++)
+    for (var x = 0; x < width; x++)
     {
         Console.SetCursorPosition(offsetX + x, offsetY + y);
-        var cell = grille[x, y];
+        var cell = grid[x, y];
         if (cell == 1) { Console.ForegroundColor = ConsoleColor.DarkGray; Console.Write("█"); }
         else if (cell == 2) { Console.ForegroundColor = ConsoleColor.Yellow; Console.Write("@"); }
         else if (cell == 3) { Console.ForegroundColor = ConsoleColor.Green; Console.Write("★"); }
@@ -109,63 +109,63 @@ for (var y = 0; y < hauteur; y++)
     }
 }
 
-Console.SetCursorPosition(0, offsetY + hauteur + 1);
+Console.SetCursorPosition(0, offsetY + height + 1);
 Console.ForegroundColor = ConsoleColor.DarkCyan;
 Console.Write("  [Z/↑] Haut   [S/↓] Bas   [Q/←] Gauche   [D/→] Droite   [Échap] Quitter");
 Console.ResetColor();
 
 // ── Action locale : redessiner UNE seule cellule via SetCursorPosition ──
-void DessinerCellule(int cx, int cy)
+void DrawCase(int cx, int cy)
 {
     Console.SetCursorPosition(offsetX + cx, offsetY + cy);
-    var cell = grille[cx, cy];
+    var cell = grid[cx, cy];
     if (cell == 1) { Console.ForegroundColor = ConsoleColor.DarkGray; Console.Write("█"); } // mur
     else if (cell == 2) { Console.ForegroundColor = ConsoleColor.Yellow; Console.Write("@"); } // perso
-    else if (cell == 3) { Console.ForegroundColor = ConsoleColor.Green; Console.Write("★"); } // sortie
+    else if (cell == 3) { Console.ForegroundColor = ConsoleColor.Green; Console.Write("★"); } // exit
     else { Console.ForegroundColor = ConsoleColor.DarkBlue; Console.Write(" "); } //cases vide
     Console.ResetColor();
 }
 
 // ── Boucle de jeu ──
-var gagné = false;
+var won = false;
 
-while (!gagné)
+while (!won)
 {
-    ConsoleKey touche = Console.ReadKey(true).Key;
+    ConsoleKey key = Console.ReadKey(true).Key;
 
-    var nx2 = joueurX;
-    var ny2 = joueurY;
+    var nx2 = playerX;
+    var ny2 = playerY;
 
-    if (touche == ConsoleKey.Z || touche == ConsoleKey.UpArrow) ny2--;
-    else if (touche == ConsoleKey.S || touche == ConsoleKey.DownArrow) ny2++;
-    else if (touche == ConsoleKey.Q || touche == ConsoleKey.LeftArrow) nx2--;
-    else if (touche == ConsoleKey.D || touche == ConsoleKey.RightArrow) nx2++;
-    else if (touche == ConsoleKey.Escape) break;
+    if (key == ConsoleKey.Z || key == ConsoleKey.UpArrow) ny2--;
+    else if (key == ConsoleKey.S || key == ConsoleKey.DownArrow) ny2++;
+    else if (key == ConsoleKey.Q || key == ConsoleKey.LeftArrow) nx2--;
+    else if (key == ConsoleKey.D || key == ConsoleKey.RightArrow) nx2++;
+    else if (key == ConsoleKey.Escape) break;
 
-    if (nx2 >= 0 && nx2 < largeur && ny2 >= 0 && ny2 < hauteur && grille[nx2, ny2] != 1)
+    if (nx2 >= 0 && nx2 < width && ny2 >= 0 && ny2 < height && grid[nx2, ny2] != 1)
     {
-        if (grille[nx2, ny2] == 3) gagné = true;
+        if (grid[nx2, ny2] == 3) won = true;
 
         // ✅ Efface l'ancienne position (couloir) → 1 seule case redessinée
-        grille[joueurX, joueurY] = 0;
-        DessinerCellule(joueurX, joueurY);
+        grid[playerX, playerY] = 0;
+        DrawCase(playerX, playerY);
 
         // ✅ Dessine la nouvelle position → 1 seule case redessinée
-        joueurX = nx2;
-        joueurY = ny2;
-        grille[joueurX, joueurY] = 2;
-        DessinerCellule(joueurX, joueurY);
+        playerX = nx2;
+        playerY = ny2;
+        grid[playerX, playerY] = 2;
+        DrawCase(playerX, playerY);
     }
 }
 
 // ── Écran de victoire ──
-Console.SetCursorPosition(0, offsetY + hauteur + 3);
-if (gagné)
+Console.SetCursorPosition(0, offsetY + height + 3);
+if (won)
 {
     Console.ForegroundColor = ConsoleColor.Green;
     Console.WriteLine("  ╔════════════════════════════════╗");
     Console.WriteLine("  ║   🎉  FÉLICITATIONS !  🎉      ║");
-    Console.WriteLine("  ║   Vous avez trouvé la sortie ! ║");
+    Console.WriteLine("  ║   Vous avez trouvé la exit ! ║");
     Console.WriteLine("  ╚════════════════════════════════╝");
     Console.ResetColor();
 }
@@ -176,7 +176,7 @@ else
     Console.ResetColor();
 }
 
-Console.SetCursorPosition(0, offsetY + hauteur + 8);
-Console.WriteLine("  Appuyez sur une touche pour quitter...");
+Console.SetCursorPosition(0, offsetY + height + 8);
+Console.WriteLine("  Appuyez sur une key pour quitter...");
 Console.CursorVisible = true;
 Console.ReadKey(true);
