@@ -1,12 +1,7 @@
 ﻿using System;
 
-// ============================================================
-//  LABYRINTHE ASCII - C# Console
-//  ✅ Optimisé : seules les cellules modifiées sont redessinées
-//               via Console.SetCursorPosition()
-// ============================================================
+// LABYRINTHE ASCII - C# Console
 
-// Constants
 const int WIDTH = 50;
 const int HEIGHT = 20;
 const int OFFSET_X = 0;
@@ -43,85 +38,9 @@ const string MSG_EXIT = "  Appuyez sur une key pour quitter...";
 
 var grid = new CellType[WIDTH, HEIGHT];
 
-// ── Génération du labyrinthe par « recursive backtracker » ──
-for (var y = 0; y < HEIGHT; y++)
-    for (var x = 0; x < WIDTH; x++)
-        grid[x, y] = CellType.Wall;
+GenerateMaze(grid, out var playerX, out var playerY, out var exitX, out var exitY);
+DrawInitialScreen(grid);
 
-var stackX = new int[CELL_WIDTH * CELL_HEIGHT];
-var stackY = new int[CELL_WIDTH * CELL_HEIGHT];
-var stackTop = 0;
-
-var visited = new bool[CELL_WIDTH, CELL_HEIGHT];
-
-var dx = new[] { 0, 1, 0, -1 };
-var dy = new[] { -1, 0, 1, 0 };
-
-var rng = new Random();
-
-var startCX = 0; var startCY = 0;
-visited[startCX, startCY] = true;
-grid[startCX * 2, startCY * 2] = CellType.Corridor;
-
-stackX[stackTop] = startCX;
-stackY[stackTop] = startCY;
-stackTop++;
-
-while (stackTop > 0)
-{
-    var cx = stackX[stackTop - 1];
-    var cy = stackY[stackTop - 1];
-
-    var directions = new[] { 0, 1, 2, 3 };
-    rng.Shuffle(directions);
-
-    var found = false;
-    foreach (var dir in directions)
-    {
-        var nx = cx + dx[dir];
-        var ny = cy + dy[dir];
-        if (nx >= 0 && nx < CELL_WIDTH && ny >= 0 && ny < CELL_HEIGHT && !visited[nx, ny])
-        {
-            grid[cx * 2 + dx[dir], cy * 2 + dy[dir]] = CellType.Corridor;
-            grid[nx * 2, ny * 2] = CellType.Corridor;
-            visited[nx, ny] = true;
-            stackX[stackTop] = nx;
-            stackY[stackTop] = ny;
-            stackTop++;
-            found = true;
-            break;
-        }
-    }
-    if (!found) stackTop--;
-}
-
-// ── Position player et exit ──
-var playerX = 0; var playerY = 0;
-var exitX = (CELL_WIDTH - 1) * 2;
-var exitY = (CELL_HEIGHT - 1) * 2;
-
-grid[playerX, playerY] = CellType.Player;
-grid[exitX, exitY] = CellType.Exit;
-
-// ── Dessin initial complet (une seule fois) ──
-Console.Clear();
-Console.CursorVisible = false;
-
-Console.SetCursorPosition(0, 0);
-Console.ForegroundColor = COLOR_TITLE;
-Console.Write(MSG_TITLE);
-Console.ResetColor();
-
-for (var y = 0; y < HEIGHT; y++)
-    for (var x = 0; x < WIDTH; x++)
-        DrawCell(x, y);
-
-Console.SetCursorPosition(0, OFFSET_Y + HEIGHT + 1);
-Console.ForegroundColor = COLOR_INSTRUCTIONS;
-Console.Write(MSG_INSTRUCTIONS);
-Console.ResetColor();
-
-// ── Action locale : redessiner UNE seule cellule via SetCursorPosition ──
 void DrawCell(int cx, int cy)
 {
     Console.SetCursorPosition(OFFSET_X + cx, OFFSET_Y + cy);
@@ -139,7 +58,6 @@ void DrawCell(int cx, int cy)
     Console.ResetColor();
 }
 
-// ── Boucle de jeu ──
 var won = false;
 
 while (!won)
@@ -184,27 +102,108 @@ while (!won)
     }
 }
 
-// ── Écran de victoire ──
-Console.SetCursorPosition(0, OFFSET_Y + HEIGHT + 3);
 if (won)
 {
-    Console.ForegroundColor = COLOR_WIN;
-    Console.Write(MSG_WIN);
-    Console.ResetColor();
+    DrawTextXY(0, OFFSET_Y + HEIGHT + 3, MSG_WIN, COLOR_WIN);
 }
 else
 {
-    Console.ForegroundColor = COLOR_QUIT;
-    Console.Write(MSG_QUIT);
-    Console.ResetColor();
+    DrawTextXY(0, OFFSET_Y + HEIGHT + 3, MSG_QUIT, COLOR_QUIT);
 }
 
-Console.SetCursorPosition(0, OFFSET_Y + HEIGHT + 8);
-Console.WriteLine(MSG_EXIT);
+DrawTextXY(0, OFFSET_Y + HEIGHT + 8, MSG_EXIT);
 Console.CursorVisible = true;
 Console.ReadKey(true);
 
-// ── Enum CellType ──
+void DrawTextXY(int x, int y, string text, ConsoleColor? color = null)
+{
+    Console.SetCursorPosition(x, y);
+    if (color != null)
+    {
+        Console.ForegroundColor = color.Value;
+    }
+    Console.Write(text);
+    Console.ResetColor();
+}
+
+void GenerateMaze(CellType[,] grid, out int playerX, out int playerY, out int exitX, out int exitY)
+{
+    // Initialize grid with walls
+    for (var y = 0; y < HEIGHT; y++)
+        for (var x = 0; x < WIDTH; x++)
+            grid[x, y] = CellType.Wall;
+
+    var stackX = new int[CELL_WIDTH * CELL_HEIGHT];
+    var stackY = new int[CELL_WIDTH * CELL_HEIGHT];
+    var stackTop = 0;
+
+    var visited = new bool[CELL_WIDTH, CELL_HEIGHT];
+
+    var dx = new[] { 0, 1, 0, -1 };
+    var dy = new[] { -1, 0, 1, 0 };
+
+    var rng = new Random();
+
+    var startCX = 0; var startCY = 0;
+    visited[startCX, startCY] = true;
+    grid[startCX * 2, startCY * 2] = CellType.Corridor;
+
+    stackX[stackTop] = startCX;
+    stackY[stackTop] = startCY;
+    stackTop++;
+
+    while (stackTop > 0)
+    {
+        var cx = stackX[stackTop - 1];
+        var cy = stackY[stackTop - 1];
+
+        var directions = new[] { 0, 1, 2, 3 };
+        rng.Shuffle(directions);
+
+        var found = false;
+        foreach (var dir in directions)
+        {
+            var nx = cx + dx[dir];
+            var ny = cy + dy[dir];
+            if (nx >= 0 && nx < CELL_WIDTH && ny >= 0 && ny < CELL_HEIGHT && !visited[nx, ny])
+            {
+                grid[cx * 2 + dx[dir], cy * 2 + dy[dir]] = CellType.Corridor;
+                grid[nx * 2, ny * 2] = CellType.Corridor;
+                visited[nx, ny] = true;
+                stackX[stackTop] = nx;
+                stackY[stackTop] = ny;
+                stackTop++;
+                found = true;
+                break;
+            }
+        }
+        if (!found) stackTop--;
+    }
+
+    // Set player and exit positions
+    playerX = 0; 
+    playerY = 0;
+    exitX = (CELL_WIDTH - 1) * 2;
+    exitY = (CELL_HEIGHT - 1) * 2;
+
+    grid[playerX, playerY] = CellType.Player;
+    grid[exitX, exitY] = CellType.Exit;
+}
+
+void DrawInitialScreen(CellType[,] grid)
+{
+    Console.Clear();
+    Console.CursorVisible = false;
+
+    DrawTextXY(0, 0, MSG_TITLE, COLOR_TITLE);
+
+    for (var y = 0; y < HEIGHT; y++)
+        for (var x = 0; x < WIDTH; x++)
+            DrawCell(x, y);
+
+    DrawTextXY(0, OFFSET_Y + HEIGHT + 1, MSG_INSTRUCTIONS, COLOR_INSTRUCTIONS);
+}
+
 enum CellType
 {
     Corridor = 0,
