@@ -165,7 +165,7 @@ if (won)
     Console.ForegroundColor = ConsoleColor.Green;
     Console.WriteLine("  ╔════════════════════════════════╗");
     Console.WriteLine("  ║   🎉  FÉLICITATIONS !  🎉      ║");
-    Console.WriteLine("  ║   Vous avez trouvé la exit ! ║");
+    Console.WriteLine("  ║   Vous avez trouvé la sortie ! ║");
     Console.WriteLine("  ╚════════════════════════════════╝");
     Console.ResetColor();
 }
