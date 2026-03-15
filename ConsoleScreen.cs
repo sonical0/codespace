@@ -2,13 +2,31 @@ readonly record struct ConsoleScreen
 {
     public void DrawText(Vec2d position, string text, ConsoleColor? color = null)
     {
+        if (position.X < 0 || position.Y < 0)
+        {
+            return;
+        }
+
+        if (position.Y >= Console.BufferHeight || position.X >= Console.BufferWidth)
+        {
+            return;
+        }
+
+        var drawableLength = Math.Min(text.Length, Console.BufferWidth - position.X);
+        if (drawableLength <= 0)
+        {
+            return;
+        }
+
+        var drawableText = drawableLength == text.Length ? text : text[..drawableLength];
+
         Console.SetCursorPosition(position.X, position.Y);
         if (color.HasValue)
         {
             Console.ForegroundColor = color.Value;
         }
 
-        Console.Write(text);
+        Console.Write(drawableText);
         Console.ResetColor();
     }
 
