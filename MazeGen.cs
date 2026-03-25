@@ -95,22 +95,17 @@ sealed class MazeGen : IMazeGenerator
             }
         }
 
-        // Place doors with IDs 0, 1, 2, etc.
         for (var doorId = 0; doorId < potentialDoors.Count; doorId++)
         {
             var doorPos = availableRooms[potentialDoors[doorId]];
             grid[doorPos.X, doorPos.Y] = new Door(doorId);
         }
 
-        // Place keys in first half of rooms (before doors), one for each door
-        // Distribute keys evenly across the first half
-        var keyId = 0;
         var keysPlaced = 0;
         var doorsNeeded = potentialDoors.Count;
 
         if (doorsNeeded > 0)
         {
-            // Find room positions for keys
             var keyRoomPositions = new List<int>();
             for (var i = 0; i < doorStartIndex && keyRoomPositions.Count < doorsNeeded; i++)
             {
@@ -120,14 +115,13 @@ sealed class MazeGen : IMazeGenerator
                 }
             }
 
-            // Place keys in found positions
             foreach (var roomIndex in keyRoomPositions)
             {
                 var keyPos = availableRooms[roomIndex];
                 if (grid[keyPos.X, keyPos.Y] is Room room && room.Content == null)
                 {
                     room.Content = new Key(keysPlaced);
-                    seysPlaced++;
+                    keysPlaced++;
                 }
             }
         }
