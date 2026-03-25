@@ -1,12 +1,12 @@
 sealed class Maze
 {
-    private readonly CellType[,] _grid;
+    private readonly Cell[,] _grid;
 
     public Vec2d Size { get; }
     public Vec2d StartPosition { get; }
     public Vec2d ExitPosition { get; }
 
-    public Maze(MazeGen mazeGen)
+    public Maze(IMazeGenerator mazeGen)
     {
         Size = mazeGen.Size;
         StartPosition = mazeGen.StartPosition;
@@ -14,18 +14,37 @@ sealed class Maze
         _grid = mazeGen.Generate();
     }
 
-    public CellType GetCellType(Vec2d position) => _grid[position.X, position.Y];
+    public Cell GetCell(Vec2d position) => _grid[position.X, position.Y];
 
     public bool IsInBounds(Vec2d position) => position.IsInBounds(Size);
 
     public bool IsWalkable(Vec2d position) =>
-        IsInBounds(position) && GetCellType(position) != CellType.Wall;
+        IsInBounds(position) && !(_grid[position.X, position.Y] is Wall);
+
+    public bool IsWalkable(Vec2d position, IReadOnlyList<ICollectable> inventory)
+    {
+        if (!IsInBounds(position))
+            return false;
+
+        var cell = _grid[position.X, position.Y];
+
+        if (cell is Wall)
+            return false;
+
+        if (cell is Door door)
+        {
+            // Check if player has the key for this door
+            return inventory.OfType<Key>().Any(k => k.DoorId == door.DoorId);
+        }
+
+        return true;
+    }
 
     public bool IsExit(Vec2d position) =>
-        IsInBounds(position) && GetCellType(position) == CellType.Exit;
+        IsInBounds(position) && _grid[position.X, position.Y] is Exit;
 
     public void Draw(
-        ConsoleScreen screen,
+        IGridDisplay screen,
         Vec2d offset,
         ConsoleColor wallColor,
         ConsoleColor corridorColor,
@@ -49,7 +68,7 @@ sealed class Maze
     }
 
     public void DrawCell(
-        ConsoleScreen screen,
+        IGridDisplay screen,
         Vec2d offset,
         Vec2d position,
         ConsoleColor wallColor,
@@ -57,14 +76,8 @@ sealed class Maze
         ConsoleColor exitColor,
         ConsoleColor startColor)
     {
-        var output = GetCellType(position) switch
-        {
-            CellType.Wall => ("█", wallColor),
-            CellType.Exit => ("★", exitColor),
-            CellType.Start => ("S", startColor),
-            _ => ("·", corridorColor)
-        };
-
+        var cell = _grid[position.X, position.Y];
+        var output = cell.GetDisplay(wallColor, corridorColor, exitColor, startColor);
         screen.DrawText(offset + position, output);
     }
 }

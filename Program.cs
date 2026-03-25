@@ -1,4 +1,4 @@
-#region Constants
+﻿#region Constants
 const int width = 50;
 const int height = 20;
 
@@ -16,29 +16,34 @@ Vous avez trouvé la sortie !
 const string sCanceled = "\n  Partie abandonnée. À bientôt !";
 const string sPressKey = "  Appuyez sur une key pour quitter...";
 
-const ConsoleColor SuccessColor     = ConsoleColor.Green;
-const ConsoleColor DangerColor      = ConsoleColor.Red;
-const ConsoleColor InfoColor        = ConsoleColor.Cyan;
+const ConsoleColor SuccessColor = ConsoleColor.Green;
+const ConsoleColor DangerColor = ConsoleColor.Red;
+const ConsoleColor InfoColor = ConsoleColor.Cyan;
 const ConsoleColor InstructionColor = ConsoleColor.DarkCyan;
-const ConsoleColor WallColor        = ConsoleColor.DarkGray;
-const ConsoleColor CorridorColor    = ConsoleColor.DarkBlue;
-const ConsoleColor PlayerColor      = ConsoleColor.Yellow;
-const ConsoleColor ExitColor        = ConsoleColor.Green;
-const ConsoleColor StartColor       = ConsoleColor.Cyan;
+const ConsoleColor WallColor = ConsoleColor.DarkGray;
+const ConsoleColor CorridorColor = ConsoleColor.DarkBlue;
+const ConsoleColor PlayerColor = ConsoleColor.Yellow;
+const ConsoleColor ExitColor = ConsoleColor.Green;
+const ConsoleColor StartColor = ConsoleColor.Cyan;
 #endregion 
 
 var mazeSize = new Vec2d(width, height);
 var mazeOffset = new Vec2d(offsetX, offsetY);
 var screen = new ConsoleScreen();
 var keyboardController = new KeyboardController();
-var mazeGen = new MazeGen(mazeSize);
+var mazeGen = new MazeGen(mazeSize, coinProbability: 0.1, doorProbability: 0.05);
 var maze = new Maze(mazeGen);
-var player = new Player(maze, mazeOffset, PlayerColor, WallColor, CorridorColor, ExitColor, StartColor);
+var player = new Player(maze, keyboardController, mazeOffset, PlayerColor, WallColor, CorridorColor, ExitColor, StartColor);
+
+// Subscribe to player events
+player.PointsChanged += (s, e) => DrawPlayerStats();
+player.InventoryChanged += (s, e) => DrawPlayerStats();
 
 var mode = State.Playing;
 
 DrawScreen();
 player.Draw(screen);
+DrawPlayerStats();
 
 while (mode == State.Playing)
 {
@@ -46,6 +51,12 @@ while (mode == State.Playing)
     if (input.IsCanceled)
     {
         mode = State.Canceled;
+        continue;
+    }
+
+    if (keyboardController.IsPickupPressed)
+    {
+        player.TryPickup();
         continue;
     }
 
@@ -83,5 +94,24 @@ void DrawScreen()
     screen.DrawBoxedText(new Vec2d(0, 0), sHeader, InfoColor);
     maze.Draw(screen, mazeOffset, WallColor, CorridorColor, ExitColor, StartColor);
     screen.DrawText(new Vec2d(0, offsetY + height), keyboardController.InstructionsText, InstructionColor);
+}
+
+void DrawPlayerStats()
+{
+    var statsX = width + 2;
+    var statsY = offsetY;
+
+    var pointsText = $"Points: {player.Points}";
+    screen.DrawText(new Vec2d(statsX, statsY), pointsText, InfoColor);
+
+    var inventoryText = $"Inventaire ({player.Inventory.Count}):";
+    screen.DrawText(new Vec2d(statsX, statsY + 1), inventoryText, InfoColor);
+
+    for (var i = 0; i < player.Inventory.Count; i++)
+    {
+        var item = player.Inventory[i];
+        var itemText = $"  - Item {i + 1} (+{item.Points}pts)";
+        screen.DrawText(new Vec2d(statsX, statsY + 2 + i), itemText, SuccessColor);
+    }
 }
 #endregion

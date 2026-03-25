@@ -1,4 +1,4 @@
-readonly record struct ConsoleScreen
+readonly record struct ConsoleScreen : IGridDisplay
 {
     public void DrawText(Vec2d position, string text, ConsoleColor? color = null)
     {
