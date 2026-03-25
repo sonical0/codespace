@@ -26,7 +26,17 @@ sealed class Room : Cell
         ConsoleColor corridorColor,
         ConsoleColor exitColor,
         ConsoleColor startColor)
-        => ("·", corridorColor);
+    {
+        if (Content == null)
+            return ("·", corridorColor);
+
+        return Content switch
+        {
+            Key => ("#", ConsoleColor.Yellow),
+            Coin => ("$", ConsoleColor.DarkYellow),
+            _ => ("·", corridorColor)
+        };
+    }
 }
 
 sealed class Exit : Cell
@@ -52,10 +62,12 @@ sealed class Start : Cell
 sealed class Door : Cell
 {
     public int DoorId { get; }
+    public bool IsOpen { get; set; }
 
     public Door(int doorId = 0)
     {
         DoorId = doorId;
+        IsOpen = false;
     }
 
     public override (string symbol, ConsoleColor color) GetDisplay(
@@ -63,5 +75,5 @@ sealed class Door : Cell
         ConsoleColor corridorColor,
         ConsoleColor exitColor,
         ConsoleColor startColor)
-        => ("D", ConsoleColor.Magenta);
+        => (IsOpen ? "O" : "D", ConsoleColor.Magenta);
 }

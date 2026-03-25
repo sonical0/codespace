@@ -49,15 +49,15 @@ sealed class MazeGen : IMazeGenerator
     public Cell[,] Generate()
     {
         var grid = new Cell[Size.X, Size.Y];
+        var visitedPath = new List<Vec2d>();
 
         for (var y = 0; y < Size.Y; y++)
             for (var x = 0; x < Size.X; x++)
                 grid[x, y] = new Wall();
 
         var rng = new Random();
-        GenerateMazeRec(StartPosition);
+        GenerateMazeRec(StartPosition, visitedPath);
 
-        // Add coins to rooms
         for (var y = 0; y < Size.Y; y++)
         {
             for (var x = 0; x < Size.X; x++)
@@ -69,50 +69,52 @@ sealed class MazeGen : IMazeGenerator
             }
         }
 
-        // Add doors to random corridors (excluding start and exit)
-        var doorCounter = 0;
-        var roomPositions = new List<Vec2d>();
+        var availableRooms = new List<Vec2d>();
         for (var y = 0; y < Size.Y; y++)
         {
             for (var x = 0; x < Size.X; x++)
             {
-                if (grid[x, y] is Room && !new Vec2d(x, y).Equals(StartPosition) && !new Vec2d(x, y).Equals(ExitPosition))
+                var pos = new Vec2d(x, y);
+                if (grid[x, y] is Room && !pos.Equals(StartPosition) && !pos.Equals(ExitPosition))
                 {
-                    roomPositions.Add(new Vec2d(x, y));
+                    availableRooms.Add(pos);
                 }
             }
         }
 
-        // Place doors on random corridors with probability
-        foreach (var roomPos in roomPositions)
+        var roomCount = availableRooms.Count;
+        var doorStartIndex = Math.Max(2, roomCount / 2);
+
+        // First pass: determine how many doors we'll actually place
+        var potentialDoors = new List<int>();
+        for (var i = doorStartIndex; i < availableRooms.Count; i++)
         {
-            if (rng.NextDouble() < DoorProbability && doorCounter < 5) // Limit doors to 5
+            if (rng.NextDouble() < DoorProbability && potentialDoors.Count < 5)
             {
-                grid[roomPos.X, roomPos.Y] = new Door(doorCounter);
-                doorCounter++;
+                potentialDoors.Add(i);
             }
         }
 
-        // Place keys in remaining rooms
-        var keyRooms = new List<Vec2d>();
-        for (var y = 0; y < Size.Y; y++)
+        // Place doors with IDs 0, 1, 2, etc.
+        for (var doorId = 0; doorId < potentialDoors.Count; doorId++)
         {
-            for (var x = 0; x < Size.X; x++)
+            var doorPos = availableRooms[potentialDoors[doorId]];
+            grid[doorPos.X, doorPos.Y] = new Door(doorId);
+        }
+
+        // Place keys in first half of rooms (before doors), one for each door
+        var keyId = 0;
+        var keySpacing = Math.Max(1, doorStartIndex / Math.Max(1, potentialDoors.Count));
+        for (var i = 0; i < doorStartIndex && keyId < potentialDoors.Count; i += Math.Max(1, keySpacing))
+        {
+            if (i < availableRooms.Count)
             {
-                if (grid[x, y] is Room room && room.Content == null && !new Vec2d(x, y).Equals(StartPosition))
+                var keyPos = availableRooms[i];
+                if (grid[keyPos.X, keyPos.Y] is Room room && room.Content == null)
                 {
-                    keyRooms.Add(new Vec2d(x, y));
+                    room.Content = new Key(keyId);
+                    keyId++;
                 }
-            }
-        }
-
-        for (var doorId = 0; doorId < doorCounter && doorId < keyRooms.Count; doorId++)
-        {
-            var keyRoomPos = keyRooms[rng.Next(keyRooms.Count)];
-            if (grid[keyRoomPos.X, keyRoomPos.Y] is Room room && room.Content == null)
-            {
-                room.Content = new Key(doorId);
-                keyRooms.Remove(keyRoomPos);
             }
         }
 
@@ -121,8 +123,9 @@ sealed class MazeGen : IMazeGenerator
 
         return grid;
 
-        void GenerateMazeRec(Vec2d currentPosition)
+        void GenerateMazeRec(Vec2d currentPosition, List<Vec2d> path)
         {
+            path.Add(currentPosition);
             grid[currentPosition.X, currentPosition.Y] = new Room();
             foreach (var directionIndex in Orders[rng.Next(Orders.Length)])
             {
@@ -133,7 +136,7 @@ sealed class MazeGen : IMazeGenerator
                 {
                     var between = currentPosition.Midpoint(nextPosition);
                     grid[between.X, between.Y] = new Room();
-                    GenerateMazeRec(nextPosition);
+                    GenerateMazeRec(nextPosition, path);
                 }
             }
         }

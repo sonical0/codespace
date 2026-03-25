@@ -83,6 +83,37 @@ sealed class Player
             _startColor);
 
         Position = nextPosition;
+
+        // Handle door opening - remove matching key from inventory
+        if (_maze.GetCell(Position) is Door door && !door.IsOpen)
+        {
+            var matchingKeyIndex = _inventory.FindIndex(item =>
+                item is Key key && key.DoorId == door.DoorId);
+
+            if (matchingKeyIndex >= 0)
+            {
+                door.IsOpen = true;
+                _inventory.RemoveAt(matchingKeyIndex);
+                InventoryChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        // Auto-pickup items when moving over them
+        if (_maze.GetCell(Position) is Room room && room.Content != null)
+        {
+            var item = room.Content;
+            _points += item.Points;
+            PointsChanged?.Invoke(this, EventArgs.Empty);
+
+            if (item.IsPersistent)
+            {
+                _inventory.Add(item);
+                InventoryChanged?.Invoke(this, EventArgs.Empty);
+            }
+
+            room.Content = null;
+        }
+
         Draw(screen);
 
         return _maze.IsExit(Position);

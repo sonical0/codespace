@@ -107,10 +107,15 @@ void DrawPlayerStats()
     var inventoryText = $"Inventaire ({player.Inventory.Count}):";
     screen.DrawText(new Vec2d(statsX, statsY + 1), inventoryText, InfoColor);
 
-    for (var i = 0; i < player.Inventory.Count; i++)
+    var sortedInventory = player.Inventory
+        .OrderBy(item => item is Key key ? key.DoorId : int.MaxValue)
+        .ToList();
+
+    for (var i = 0; i < sortedInventory.Count; i++)
     {
-        var item = player.Inventory[i];
-        var itemText = $"  - Item {i + 1} (+{item.Points}pts)";
+        var item = sortedInventory[i];
+        var itemName = item is Key key ? key.Name : $"Item {i + 1}";
+        var itemText = $"  - {itemName} (+{item.Points}pts)";
         screen.DrawText(new Vec2d(statsX, statsY + 2 + i), itemText, SuccessColor);
     }
 }

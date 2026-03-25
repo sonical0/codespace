@@ -33,8 +33,8 @@ sealed class Maze
 
         if (cell is Door door)
         {
-            // Check if player has the key for this door
-            return inventory.OfType<Key>().Any(k => k.DoorId == door.DoorId);
+            // Allow passage through open doors or if player has the key
+            return door.IsOpen || inventory.OfType<Key>().Any(k => k.DoorId == door.DoorId);
         }
 
         return true;
@@ -42,6 +42,23 @@ sealed class Maze
 
     public bool IsExit(Vec2d position) =>
         IsInBounds(position) && _grid[position.X, position.Y] is Exit;
+
+    public bool TryOpenDoor(Vec2d position, IReadOnlyList<ICollectable> inventory)
+    {
+        if (!IsInBounds(position))
+            return false;
+
+        var cell = _grid[position.X, position.Y];
+        if (cell is not Door door)
+            return false;
+
+        var matchingKey = inventory.OfType<Key>().FirstOrDefault(k => k.DoorId == door.DoorId);
+        if (matchingKey == null)
+            return false;
+
+        door.IsOpen = true;
+        return true;
+    }
 
     public void Draw(
         IGridDisplay screen,
